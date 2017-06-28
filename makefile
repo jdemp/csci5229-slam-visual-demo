@@ -1,5 +1,5 @@
 # Example 13
-EXE=hw3
+EXE=slam_demo
 
 # Main target
 all: $(EXE)
@@ -43,7 +43,7 @@ CSCIx229.a:fatal.o loadtexbmp.o print.o project.o errcheck.o object.o
 	g++ -c $(CFLG) $<
 
 #  Link
-hw3:hw3.o CSCIx229.a
+slam_demo:slam_demo.o CSCIx229.a
 	gcc -O3 -o $@ $^   $(LIBS)
 
 #  Clean
