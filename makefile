@@ -44,7 +44,7 @@ CSCIx229.a:fatal.o loadtexbmp.o print.o project.o errcheck.o object.o
 
 #  Link
 slam_demo:slam_demo.o CSCIx229.a
-	gcc -O3 -o $@ $^   $(LIBS)
+	g++ -O3 -o $@ $^   $(LIBS)
 
 #  Clean
 clean:

@@ -27,11 +27,14 @@
  */
 #include "CSCIx229.h"
 #include <stdio.h>
+#include <stdbool.h>
+
 
 #define MATCH 0
 #define LANDMARK_CAMERA_0 1
 #define LANDMARK_CAMERA_1 2
 #define BAD_MATCH 3
+#define TRANSFORM 4
 
 int axes=1;       //  Display axes
 int mode=1;       //  Projection mode
@@ -61,11 +64,22 @@ float shiny   =   1;  // Shininess (value)
 int zh        =  90;  // Light azimuth
 float zlight  =   0;  // Elevation of light
 int iteration = 0;
+int step = 0;
+double demo_poses_array[5][4] = {
+              {-3,-3,1,-20},
+              {-0,-3,1,20},
+              {1,-1,1,40},
+              {1,2,1,40},
+              {.5,3.5,1,70}
+};
+
+bool camera_transforms[10];
 
 struct Pose{
   double x;
   double y;
   double z;
+  double d;
 };
 
 struct Landmark{
@@ -80,14 +94,20 @@ struct Point{
   double z;
 };
 
+struct Intersection{
+  struct Point point;
+  bool intersection; //if an actual intersection
+};
+
 struct Camera{
   struct Pose pose;
   struct Landmark landmarks[10];
 };
 
 
-//unsigned int texture[4]; // Textures
+unsigned int objects[1]; // Textures
 struct Camera cameras[10];
+struct Pose demo_poses[10];
 /*
  *  Draw a cube
  *     at (x,y,z)
@@ -274,12 +294,14 @@ static void hanoi_stand(double space_between_poles)
 
 void line(double x, double y, double z, double x1, double y1, double z1, int type)
 {
+  glLineWidth(5);
   glBegin(GL_LINE_STRIP);
-  if (type==MATCH) glColor3f(0,1,0);
-  else if (type==BAD_MATCH) glColor3f(1,0,0);
-  else if (type==LANDMARK_CAMERA_0) glColor3f(0,0,1);
-  else if (type==LANDMARK_CAMERA_1) glColor3f(1,1,1);
-  else glColor3f(.5,.5,.5);
+  if (type==MATCH) glColor4f(0,1,0,1);
+  else if (type==BAD_MATCH) glColor4f(1,0,0,1);
+  else if (type==LANDMARK_CAMERA_0) glColor4f(0,0,1,1);
+  else if (type==LANDMARK_CAMERA_1) glColor4f(1,1,1,1);
+  else if (type==TRANSFORM) glColor4f(1,1,0,1);
+  else glColor4f(.5,.5,.5,1);
   glVertex3d(x,y,z);
   glVertex3d(x1,y1,z1);
   glEnd();
@@ -289,7 +311,7 @@ void landmark(struct Landmark loc)
 {
   glPointSize(10);
   glBegin(GL_POINTS);
-  glColor3f(1,1,0);
+  glColor4f(1,1,0,1);
   glVertex3d(loc.x,loc.y,loc.z);
   glEnd();
 }
@@ -299,9 +321,10 @@ void camera(struct Pose pose)
   //may redraw as lines instead of polygons
   glPushMatrix();
   glTranslated(pose.x,pose.y,pose.z);
-  //glRotated(90,pose.roll, pose.pitch, roll.yaw);
-  glBegin(GL_TRIANGLES);
-  glColor3f(1,1,1);
+  glRotated(pose.d,0,0,1);
+  glLineWidth(5);
+  glBegin(GL_LINE_STRIP);
+  glColor4f(1,1,1,1);
   glVertex3d(0,0,0);
   glVertex3d(1,1,1);
   glVertex3d(1,1,-1);
@@ -321,6 +344,7 @@ void camera(struct Pose pose)
   glEnd();
 
   glBegin(GL_QUADS);
+  glColor4f(.5,.5,.5,.5);
   glVertex3d(1,1,1);
   glVertex3d(-1,1,1);
   glVertex3d(-1,1,-1);
@@ -330,13 +354,75 @@ void camera(struct Pose pose)
   glPopMatrix();
 }
 
-void next_iteration()
+struct Camera next_camera()
 {
-  //struct Camera cam;
-  cameras[iteration+1].pose.x = cameras[iteration].pose.x + 4;
-  cameras[iteration+1].pose.y = cameras[iteration].pose.y;
-  cameras[iteration+1].pose.z = cameras[iteration].pose.z;
-  iteration++;
+  struct Camera cam;
+  cam.pose = demo_poses[iteration];
+  //will decide on landmarks here
+  return cam;
+
+}
+
+
+struct Intersection calcIntersection(int camId, int landmarkId)
+{
+  struct Intersection inter;
+  return inter;
+}
+
+//finds landmarks visible to camera and adds 10 to its list
+void calcLandmarks(int camId)
+{
+
+}
+
+//sets the visibility of the camera-landmark lines
+void setCamLines(int newCamID, int oldCamID)
+{
+
+}
+
+//shows the correspondences between frames
+void showCorrespondences(int newCamID, int oldCamID)
+{
+
+}
+
+void next_step()
+{
+  if (step==0) //add a camera
+  {
+    cameras[iteration] = next_camera();
+    step++;
+  }
+  else if (step==1) //detect landmarks in frame of camera
+  {
+
+    step++;
+  }
+  else if (step==2) //show the landmarks connected to camera
+  {
+    step++;
+  }
+  else if (step==3 && iteration!=0) //show correspondences between the new cameras
+  {
+    step++;
+  }
+  else if (step==4 && iteration!=0) //draw a line showing transform
+  {
+
+    camera_transforms[iteration]=true;
+
+
+    //increment
+    step=0;
+    iteration++;
+  }
+  else
+  {
+      step=0;
+      iteration++;
+  }
 }
 
 void display()
@@ -348,7 +434,8 @@ void display()
    glEnable(GL_DEPTH_TEST);
    glEnable(GL_TEXTURE_2D);
    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
-
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA,GL_ONE);
    //  Undo previous transformations
    glLoadIdentity();
    //  Perspective - set eye position
@@ -412,7 +499,23 @@ void display()
 
    for(int i=0;i<=iteration;i++)
    {
-     camera(cameras[i].pose);
+     if (cameras[i].pose.x==0 && cameras[i].pose.y==0 && cameras[i].pose.z==0)
+     {}
+     else camera(cameras[i].pose);
+   }
+
+   //draw landmarks that are to be drawn
+
+   //draw lines designated to draw
+
+   //draw transform lines
+   for(int i=1;i<10;i++)
+   {
+     if (camera_transforms[i]==true)
+     {
+       line(cameras[i-1].pose.x,cameras[i-1].pose.y,cameras[i-1].pose.z,
+              cameras[i].pose.x,cameras[i].pose.y,cameras[i].pose.z, TRANSFORM);
+     }
    }
 
    struct Landmark pos;
@@ -428,6 +531,7 @@ void display()
    glColor3f(1,1,1);
    if (axes)
    {
+      glLineWidth(1);
       glBegin(GL_LINES);
       glVertex3d(0.0,0.0,0.0);
       glVertex3d(len,0.0,0.0);
@@ -447,15 +551,8 @@ void display()
 
    //  Display parameters
    glWindowPos2i(5,5);
-   Print("Dim=%.1f FOV=%d Light=%s",
-     dim,fov,light?"On":"Off");
-   if (light)
-   {
-      glWindowPos2i(5,45);
-      Print("Model=%s LocalViewer=%s Distance=%d Elevation=%.1f",smooth?"Smooth":"Flat",local?"On":"Off",distance,zlight);
-      glWindowPos2i(5,25);
-      Print("Ambient=%d  Diffuse=%d Specular=%d Emission=%d Shininess=%.0f",ambient,diffuse,specular,emission,shiny);
-   }
+   Print("Dim=%.1f FOV=%d Step=%d Interation=%d",
+     dim,fov,step,iteration);
 
    //  Render the scene and make it visible
    ErrCheck("display");
@@ -555,7 +652,7 @@ void key(unsigned char ch,int x,int y)
    else if (ch==']')
       zlight += 0.1;
   else if (ch==' ')
-      next_iteration();
+      next_step();
 
    //  Translate shininess power to value (-1 => 0)
    shiny = shininess<0 ? 0 : pow(2.0,shininess);
@@ -587,6 +684,7 @@ struct Point * readInPointCloud(const char* pcFile, int scale)
   f = fopen(pcFile,"r");
   if (!f) Fatal("Cannot open file %s\n",pcFile);
 
+
 }
 
 /*
@@ -594,9 +692,17 @@ struct Point * readInPointCloud(const char* pcFile, int scale)
  */
 int main(int argc,char* argv[])
 {
-  cameras[0].pose.x = 0;
-  cameras[0].pose.y = 0;
-  cameras[0].pose.z = 5;
+    for (int i=0;i<5;i++)
+    {
+      struct Pose p;
+      p.x = demo_poses_array[i][0];
+      p.y = demo_poses_array[i][1];
+      p.z = demo_poses_array[i][2];
+      p.d = demo_poses_array[i][3];
+      demo_poses[i] = p;
+
+    }
+    camera_transforms[0]=true;
    //  Initialize GLUT
    glutInit(&argc,argv);
    //  Request double buffered, true color window with Z buffering at 600x600
@@ -615,6 +721,8 @@ int main(int argc,char* argv[])
    texture[1] = LoadTexBMP("wood.bmp");
    texture[2] = LoadTexBMP("metal.bmp");
    */
+
+   //objects[0] = LoadOBJ("tyra.obj");
    //  Pass control to GLUT so it can interact with the user
    ErrCheck("init");
    glutMainLoop();
