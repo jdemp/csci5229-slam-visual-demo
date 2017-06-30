@@ -5,6 +5,7 @@ then run ./slam_demo
 
 Use arrow keys to navigate around, PageUp & PageDown allow you to move up/down
 Press the spacebar to advance through the steps
+Pressing 
 
 Fix the miscellaneous errors
 -crashes if you try to iterate beyond the number of programmed iterations
