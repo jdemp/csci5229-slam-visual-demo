@@ -92,8 +92,8 @@ double init_landmarks_array[5][3] ={
 int cam_landmark_array[5][10]={
             {3,4,0,0,0,0,0,0,0,0},
             {3,4,0,0,0,0,0,0,0,0},
-            {1,3,4,2,0,0,0,0,0,0},
-            {1,4,0,0,0,0,0,0,0,0},
+            {1,0,4,2,0,0,0,0,0,0},
+            {1,0,0,0,0,0,0,0,0,0},
             {0,3,1,0,0,0,0,0,0,0}
 };
 
@@ -136,7 +136,7 @@ struct Camera{
 };
 
 
-unsigned int texture[1]; // Textures
+unsigned int texture[2]; // Textures
 struct Camera cameras[5];
 struct Landmark landmarks[100];
 /*
@@ -289,39 +289,38 @@ static void pole(double height, double radius)
 }
 
 
-/*
+
 static void hanoi_stand(double space_between_poles)
 {
 
 
-  glColor3f(.5,.35,.05);
-  glBindTexture(GL_TEXTURE_2D,texture[2]);
+  glColor3f(.1,.1,.1);
+  glBindTexture(GL_TEXTURE_2D,texture[0]);
   float brown[] = {.5,.35,.05,1};
   float black[] = {0,0,0,1};
   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,0);
   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,brown);
   glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,brown);
   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,black);
-  cube(0,0,0,2,5,.1,0);
+  cube(0,0,0,2,6,.1,0);
   glPushMatrix();
   glTranslated(0,0,0);
   glRotated(90,0,0,1);
   glScaled(1,1,2.2);
-  pole(2,.1);
+  pole(1,.1);
 
   glPushMatrix();
-  glTranslated(potential_landmarks_index0,-1*space_between_poles,0);
+  glTranslated(0,-1*space_between_poles,0);
   glRotated(90,0,0,1);
   glScaled(1,1,2.2);
-  pole(2,.1);
+  pole(1,.1);
 
   glPushMatrix();
   glTranslated(0,space_between_poles,0);
   glRotated(90,0,0,1);
   glScaled(1,1,2.2);
-  pole(2,.1);
+  pole(1,.1);
 }
-*/
 
  static void torus(double a, double c)
  {
@@ -509,7 +508,7 @@ void next_step()
 
 void display()
 {
-   const double len=2.0;  //  Length of axes
+   //const double len=2.0;  //  Length of axes
    //  Erase the window and the depth buffer
    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
    //  Enable Z-buffering in OpenGL
@@ -534,7 +533,6 @@ void display()
    //  Light switch
    //rescale these to fit on the table
    //  Draw scenei
-   /*
    float white[] = {1,1,1,1};
    float black[] = {0,0,0,1};
    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
@@ -542,42 +540,50 @@ void display()
    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,black);
 
    glPushMatrix();
+   glTranslated(-.5,-.4,.95);
+   glRotated(80,0,0,1);
+   glScaled(.15,.15,.2);
+
+   glPushMatrix();
    //  Offset
    glTranslated(0,-4,.25);
    //glRotated(90,0,1,0);
    glScaled(1,1,.25);
-   glColor3f(1,0,0);
-   glBindTexture(GL_TEXTURE_2D,texture[2]);
+   glColor4f(1,0,0,1);
+   glBindTexture(GL_TEXTURE_2D,texture[1]);
    torus(.5,1);
 
    glPushMatrix();
    //  Offset
-   glTranslated(0,-4,1);
+   glTranslated(0,-4,.7);
    //glRotated(90,0,0,1);
    glScaled(.75,.75,.25);
-   glColor3f(1,1,0);
-   glBindTexture(GL_TEXTURE_2D,texture[2]);
+   glColor4f(1,1,0,1);
+   glBindTexture(GL_TEXTURE_2D,texture[1]);
    torus(.5,1);
 
    glPushMatrix();
    //  Offset
-   glTranslated(0,-4,2);
+   glTranslated(0,-4,.9);
    //glRotated(90,0,0,1);
-   glScalelm.x = init_landmarks_array[i][0];d(.5,.5,.25);
-   glColor3f(0,1,1);
-   glBindTexture(GL_TEXTURE_2D,texture[2]);
+   glScaled(.5,.5,.25);
+   glColor4f(0,1,1,1);
+   glBindTexture(GL_TEXTURE_2D,texture[1]);
    torus(.5,1);
 
    glPushMatrix();
    //  Offset
-   glTranslated(0,-4,3);
+   glTranslated(0,-4,1.25);
    //glRotated(90,0,0,1);
    glScaled(.25,.25,.25);
-   glColor3f(1,0,1);
-   glBindTexture(GL_TEXTURE_2D,texture[2]);
+   glColor4f(1,0,1,1);
+   glBindTexture(GL_TEXTURE_2D,texture[1]);
    torus(.5,1);
-   */
-   //hanoi_stand(4);
+   hanoi_stand(4);
+
+   glPopMatrix();
+
+
    table();
    ground();
    glDisable(GL_TEXTURE_2D);
@@ -661,9 +667,10 @@ void display()
    //glDisable(GL_LIGHTING);
 
    //  Display parameters
+   glColor3f(1,1,1);
    glWindowPos2i(5,5);
-   Print("Dim=%.1f FOV=%d Step=%d Interation=%d",
-     dim,fov,step,iteration);
+   Print("Angle=%d FOV=%d Step=%d Interation=%d",
+     theta_loc,fov,step+1,iteration+1);
 
    //  Render the scene and make it visible
    ErrCheck("display");
@@ -729,40 +736,26 @@ void special(int key,int x,int y)
 /*
  *  GLUT calls this routine when a key is pressed
  */
+void setCameraView(int camId)
+{
+  eye_x = cameras[camId].pose.x;
+  eye_y = cameras[camId].pose.y;
+  eye_z = cameras[camId].pose.z;
+  theta_loc = cameras[camId].pose.d +90;
+}
+
 void key(unsigned char ch,int x,int y)
 {
    //  Exit on ESC
    if (ch == 27)
       exit(0);
-   //  Reset view angle+++
-   //  Toggle axes
-   else if (ch == 'x' || ch == 'X')
-      axes = 1-axes;
-   //  Toggle lighting
-   else if (ch == 'l' || ch == 'L')
-      light = 1-light;
-   //  Switch projection mode
-   else if (ch == 'p' || ch == 'P')
-      mode = 1-mode;
-   //  Toggle light movement
-   else if (ch == 'm' || ch == 'M')
-      move = 1-move;
-   //  Move light
-   else if (ch == '<')
-      zh += 1;
-   else if (ch == '>')
-      zh -= 1;
-   //  Change field of view angle
-   else if (ch == '-' && ch>1)
-      fov--;
-   else if (ch == '+' && ch<179)
-      fov++;
-   //  Light elevation
-   else if (ch=='[')
-      zlight -= 0.1;
-   else if (ch==']')
-      zlight += 0.1;
-  else if (ch==' ')
+
+    else if (ch=='1') setCameraView(0);
+    else if (ch=='2') setCameraView(1);
+    else if (ch=='3') setCameraView(2);
+    else if (ch=='4') setCameraView(3);
+    else if (ch=='5') setCameraView(4);
+    else if (ch==' ')
       if (iteration<6) next_step();
 
    //  Translate shininess power to value (-1 => 0)
@@ -849,6 +842,7 @@ int main(int argc,char* argv[])
    glutIdleFunc(idle);
 
    texture[0] = LoadTexBMP("wood.bmp");
+   texture[1] = LoadTexBMP("cleanmetal.bmp");
    //texture[2] = LoadTexBMP("metal.bmp");
 
    //objects[0] = LoadOBJ("tyra.obj");
