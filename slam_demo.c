@@ -65,6 +65,14 @@ int zh        =  90;  // Light azimuth
 float zlight  =   0;  // Elevation of light
 int iteration = 0;
 int step = 0;
+int potential_landmarks_index = 0;
+int camera_corners[4][3] ={
+              {1,1,1},
+              {1,1,-1},
+              {-1,1,1},
+              {-1,1,-1}
+};
+
 double demo_poses_array[5][4] = {
               {-3,-3,1,-20},
               {-0,-3,1,20},
@@ -101,19 +109,24 @@ struct Intersection{
 
 struct Camera{
   struct Pose pose;
-  struct Landmark landmarks[10];
+  int landmarks[10]; //the indexes of landmarks this camera can see (up to 10)
+  // the corners of the camera
+  struct Point camera_corners[4];
 };
 
 
 unsigned int objects[1]; // Textures
 struct Camera cameras[10];
 struct Pose demo_poses[10];
+struct Landmark potential_landmarks[100];
 /*
  *  Draw a cube
  *     at (x,y,z)
  *     dimentions (dx,dy,dz)
  *     rotated th about the y axis
  */
+
+
  static void cube(double x,double y,double z,
                   double dx,double dy,double dz,
                   double th)
@@ -127,7 +140,7 @@ struct Pose demo_poses[10];
     glScaled(dx,dy,dz);
     //  Enable textures
     //  Front
-
+    glColor4f(.5,.5,.5,1);
     glBegin(GL_QUADS);
     glNormal3f( 0, 0, 1);
     glTexCoord2f(0,0); glVertex3f(-1,-1, 1);
@@ -175,8 +188,18 @@ struct Pose demo_poses[10];
     glTexCoord2f(1,1); glVertex3f(+1,-1,+1);
     glTexCoord2f(0,1); glVertex3f(-1,-1,+1);
     glEnd();
-    //  Undo transformations and textures
     glPopMatrix();
+
+    /* doesn't work will just keep making landmarks until max
+    int i = 0;
+    while (potential_landmarks_index<100 && i<8) {
+      potential_landmarks[potential_landmarks_index].x = cube_corners[i][0]*m[0] + cube_corners[i][1]*m[4] + cube_corners[i][2]*m[8] + m[12];
+      potential_landmarks[potential_landmarks_index].y = cube_corners[i][0]*m[1] + cube_corners[i][1]*m[5] + cube_corners[i][2]*m[9] + m[13];
+      potential_landmarks[potential_landmarks_index].z = cube_corners[i][0]*m[2] + cube_corners[i][1]*m[6] + cube_corners[i][2]*m[10] + m[14];
+      i++;
+    }
+    */
+
 }
 
 /*
@@ -312,7 +335,9 @@ void landmark(struct Landmark loc)
   glPointSize(10);
   glBegin(GL_POINTS);
   glColor4f(1,1,0,1);
-  glVertex3d(loc.x,loc.y,loc.z);
+  glVertex4d(loc.x,loc.y,loc.z,1);
+  //printf("%f %f %f %f", finalVertex[0][0],finalVertex[1][0],finalVertex[2][0],finalVertex[3][0]);
+  //printf("\n");
   glEnd();
 }
 
@@ -358,6 +383,15 @@ struct Camera next_camera()
 {
   struct Camera cam;
   cam.pose = demo_poses[iteration];
+  //calc camera camera conrers
+  for (int i=0;i<4;i++)
+  {
+    cam.camera_corners[i].x = camera_corners[i][0]*Cos(cam.pose.d) - camera_corners[i][1]*Sin(cam.pose.d) + cam.pose.x;
+    cam.camera_corners[i].y = camera_corners[i][0]*Sin(cam.pose.d) + camera_corners[i][1]*Cos(cam.pose.d) + cam.pose.y;
+    cam.camera_corners[i].z = camera_corners[i][2] + cam.pose.z;
+  }
+
+
   //will decide on landmarks here
   return cam;
 
@@ -444,7 +478,7 @@ void display()
   //double Ez = +2*dim*Cos(th)*Cos(ph);
   //gluLookAt(Ex,Ey,Ez , 0,0,0 , 0,Cos(ph),0);
 
-  gluLookAt(eye_x,eye_y, eye_z , eye_x + Cos(theta_loc),eye_y + Sin(theta_loc),eye_z , 0,0,1);
+    gluLookAt(eye_x,eye_y, eye_z , eye_x + Cos(theta_loc),eye_y + Sin(theta_loc),eye_z , 0,0,1);
 
    //  Flat or smooth shading
    glShadeModel(smooth ? GL_SMOOTH : GL_FLAT);
@@ -501,11 +535,21 @@ void display()
    {
      if (cameras[i].pose.x==0 && cameras[i].pose.y==0 && cameras[i].pose.z==0)
      {}
-     else camera(cameras[i].pose);
+     else
+     {
+       camera(cameras[i].pose);
+       landmark(cameras[i].camera_corners[0]);
+       landmark(cameras[i].camera_corners[1]);
+       landmark(cameras[i].camera_corners[2]);
+       landmark(cameras[i].camera_corners[3]);
+     }
    }
 
    //draw landmarks that are to be drawn
-
+   for (int i =0;i<potential_landmarks_index;i++)
+   {
+     landmark(potential_landmarks[i]);
+   }
    //draw lines designated to draw
 
    //draw transform lines
@@ -518,16 +562,13 @@ void display()
      }
    }
 
-   struct Landmark pos;
-   pos.x = 0;
-   pos.y = 0;
-   pos.z = 0;
-   landmark(pos);
+
+   //cube(0,0,0,1,1,1,0);
 
 
 
    //  Draw axes - no lighting from here on
-   glDisable(GL_LIGHTING);
+   //glDisable(GL_LIGHTING);
    glColor3f(1,1,1);
    if (axes)
    {
