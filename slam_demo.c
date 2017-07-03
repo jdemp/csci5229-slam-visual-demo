@@ -49,6 +49,7 @@ double dim=5.0;   //  Size of world
 double eye_x = 5;
 double eye_y = 5;
 double eye_z = 1.5;
+int view = 1;
 // Light values
 int one       =   1;  // Unit value
 int distance  =   10;  // Light distance
@@ -73,28 +74,71 @@ int camera_corners[4][3] ={
               {-1,1,-1}
 };
 
-double demo_poses_array[5][4] = {
-              {-3,-3,1.2,-20},
-              {-0,-3,1.2,20},
-              {2.5,-2,1.1,45},
-              {3.2,0,1.1,80},
-              {2.7,2,1.0,120}
+double demo_poses_array[10][4] = {
+              {-3,-3,1.2,-20},//1
+              {-0,-3,1.2,20},//2
+              {2.5,-2,1.1,45},//3
+              {3.2,0,1.1,80},//4
+              {2.7,2,1.0,120},//5
+              {1.0,2,1.2,160},//6
+              {-.5,2,1.3,165},//7
+              {-1.5,2.4,1.3,180},//8
+              {-2.85,0,1.2,250},//9
+              {-2.8,-1,1.1,290}//10
 };
 
-double init_landmarks_array[5][3] ={
+double loop_closure_array[10][4] = {
+              {-3,-3,1.2,-20},//1
+              {-0,-3,1.2,20},//2
+              {2.5,-2,1.1,45},//3
+              {3.2,0,1.1,80},//4
+              {2.7,2,1.1,120},//5
+              {1.0,2,1.1,160},//6
+              {-.5,2,1.1,165},//7
+              {-1.5,2.4,1.1,180},//8
+              {-2.85,0   ,1.2,250},//9
+              {-3,-3,1.2,-20}//10
+};
+int num_landmarks =24;
+double init_landmarks_array[24][3] ={
                 {0,0,0},
                 {2,1,.9},
                 {2,-1,.9},
                 {-2,1,.9},
-                {-2,-1,.9}
+                {-2,-1,.9},//4
+                {-1.5,-.5,.9},//5
+                {-.10,-.45,1},//6
+                {1.9,1,.9},//7
+                {-.5,.5,.9},//8
+                {2,1,.6},//9
+                {2,-1,.7},//10
+                {-2,1,.5},//11
+                {-2,-1,.8},//12
+                {1.5,-.5,.9},//13
+                {-0,-.5,1},//14
+                {-1.9,1,.9},//15
+                {-.5,-.5,.9},//16
+                {0,-1,.8},//`17
+                {1.5,-1,.85},//18
+                {-1.4,-1,.79},//19
+                {-1.5,-.8,1},//20
+                {.35,-.5,.95},//21
+                {2,.5,.86},//22
+                {1.5,1,.86}//23
+
 };
 
-int cam_landmark_array[5][10]={
-            {3,4,0,0,0,0,0,0,0,0},
-            {3,4,0,0,0,0,0,0,0,0},
-            {1,0,4,2,0,0,0,0,0,0},
-            {1,0,0,0,0,0,0,0,0,0},
-            {0,3,1,0,0,0,0,0,0,0}
+int cam_landmark_array[10][10]={
+            {3,4,12,20,19,5,0,0,0,0},
+            {3,4,19,20,5,6,0,0,0,0},
+            {1,6,4,2,13,10,17,21,0,0},
+            {1,9,21,22,13,0,0,0,0,0},
+            {9,3,1,21,23,6,0,0,0,0},//5
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {3,4,12,20,19,5,0,0,0,0}//10
 };
 
 bool camera_transforms[10];
@@ -133,11 +177,12 @@ struct Camera{
   int visible_landmarks[10];
   bool show_new;
   bool show_old;
+  bool is_selected;
 };
 
 
 unsigned int texture[2]; // Textures
-struct Camera cameras[5];
+struct Camera cameras[10];
 struct Landmark landmarks[100];
 /*
  *  Draw a cube
@@ -253,6 +298,32 @@ void ground()
   glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,brown);
   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,black);
   cube(0,0,-.1,5,5,.05,0);
+}
+
+void walls()
+{
+  glColor4f(.5,.5,.5,1);
+  glBegin(GL_QUADS);
+  glVertex3f(5,5,-.1);
+  glVertex3f(5,-5,-.1);
+  glVertex3f(5,-5,5);
+  glVertex3f(5,5,5);
+
+  glVertex3f(5,5,-.1);
+  glVertex3f(-5,5,-.1);
+  glVertex3f(-5,5,5);
+  glVertex3f(5,5,5);
+
+  glVertex3f(-5,5,-.1);
+  glVertex3f(-5,-5,-.1);
+  glVertex3f(-5,-5,5);
+  glVertex3f(-5,5,5);
+
+  glVertex3f(5,-5,-.1);
+  glVertex3f(-5,-5,-.1);
+  glVertex3f(-5,-5,5);
+  glVertex3f(5,-5,5);
+  glEnd();
 }
 
 /*
@@ -375,7 +446,7 @@ void line(double x, double y, double z, double x1, double y1, double z1, int typ
   else if (type==BAD_MATCH) glColor4f(1,0,0,1);
   else if (type==LANDMARK_CAMERA_0) glColor4f(0,0,1,1);
   else if (type==LANDMARK_CAMERA_1) glColor4f(1,0,1,1);
-  else if (type==TRANSFORM) glColor4f(1,1,0,1);
+  else if (type==TRANSFORM) glColor4f(0,1,0,1);
   else glColor4f(.5,.5,.5,1);
   glVertex4d(x,y,z,1);
   glVertex4d(x1,y1,z1,1);
@@ -386,7 +457,7 @@ void landmark(struct Landmark loc)
 {
   glPointSize(10);
   glBegin(GL_POINTS);
-  glColor4f(1,1,0,1);
+  //glColor4f(1,1,0,1);
   glVertex4d(loc.x,loc.y,loc.z,1);
   glEnd();
 }
@@ -470,6 +541,24 @@ void showCorrespondences(int newCamID, int oldCamID)
 
 void next_step()
 {
+  if (iteration==10)
+  {
+    for (int i=0;i<10;i++)
+    {
+      cameras[i].pose.x = loop_closure_array[i][0];
+      cameras[i].pose.y = loop_closure_array[i][1];
+      cameras[i].pose.z = loop_closure_array[i][2];
+      cameras[i].pose.d = loop_closure_array[i][3];
+      /*calc camera camera conrers
+      for (int i=0;i<4;i++)
+      {
+        cameras[i].camera_corners[i].x = .5*camera_corners[i][0]*Cos(cameras[i].pose.d) - camera_corners[i][1]*Sin(cameras[i].pose.d) + cameras[i].pose.x;
+        cameras[i].camera_corners[i].y = camera_corners[i][0]*Sin(cameras[i].pose.d) + .5*camera_corners[i][1]*Cos(cameras[i].pose.d) + cameras[i].pose.y;
+        cameras[i].camera_corners[i].z = .5*camera_corners[i][2] + cameras[i].pose.z;
+      }
+      */
+    }
+  }
   if (step==0) //add a camera
   {
     cameras[iteration].visible=true;
@@ -493,8 +582,6 @@ void next_step()
   {
 
     camera_transforms[iteration]=true;
-
-
     //increment
     step=0;
     iteration++;
@@ -516,7 +603,7 @@ void display()
    glEnable(GL_TEXTURE_2D);
    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
    glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    //  Undo previous transformations
    glLoadIdentity();
    //  Perspective - set eye position
@@ -532,7 +619,9 @@ void display()
 
    //  Light switch
    //rescale these to fit on the table
-   //  Draw scenei
+   //  Draw scene
+   if(view%3!=2)
+   {
    float white[] = {1,1,1,1};
    float black[] = {0,0,0,1};
    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
@@ -540,7 +629,7 @@ void display()
    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,black);
 
    glPushMatrix();
-   glTranslated(-.5,-.4,.95);
+   glTranslated(-.5,-.4,.9);
    glRotated(80,0,0,1);
    glScaled(.15,.15,.2);
 
@@ -583,20 +672,24 @@ void display()
 
    glPopMatrix();
 
-
-   table();
-   ground();
-   glDisable(GL_TEXTURE_2D);
-   for(int i=0;i<=iteration;i++)
-   {
-     if (cameras[i].visible==true) camera(cameras[i].pose);
+     table();
 
    }
+   ground();
+   glDisable(GL_TEXTURE_2D);
+   walls();
+   /*
+   for (int i=1;i<num_landmarks;i++)
+   {
+     landmark(landmarks[i]);
+   }
+   */
 
    //draw landmarks that are to be drawn
-   for (int i=0;i<=iteration;i++)
+   for (int i=0;i<10;i++)
    {
      //printf("about drawing landmarks for cam%d",i);
+     if (view%3!=0){
      if(cameras[i].draw_landmarks==true)
      {
        //printf("drawing landmarks for cam%d",i);
@@ -605,9 +698,14 @@ void display()
 
          int index = cameras[i].visible_landmarks[lm];
          //printf("Index is %d\n",index);
-         if(index>0) {landmark(landmarks[index]);}
+         if(index>0)
+         {
+           if (cameras[i].is_selected) glColor4f(0,1,0,1);
+           else glColor4f(1,1,0,1);
+           landmark(landmarks[index]);
+         }
        }
-     }
+     }}
 
      if(cameras[i].show_new==true)
      {
@@ -649,13 +747,19 @@ void display()
      }
    //draw lines designated to draw
    //draw transform lines
-   for(int i=1;i<5;i++)
+   for(int i=1;i<10;i++)
    {
      if (camera_transforms[i]==true)
      {
        line(cameras[i-1].pose.x,cameras[i-1].pose.y,cameras[i-1].pose.z,
               cameras[i].pose.x,cameras[i].pose.y,cameras[i].pose.z, TRANSFORM);
      }
+   }
+
+   for(int i=0;i<10;i++)
+   {
+     if (cameras[i].visible==true) camera(cameras[i].pose);
+
    }
 
 
@@ -690,6 +794,25 @@ void idle()
    glutPostRedisplay();
 }
 
+void clearCameras()
+{
+ for (int i=0;i<5;i++)
+ {
+   cameras[i].is_selected = false;
+ }
+}
+void setCameraView(int camId)
+{
+  eye_x = cameras[camId].pose.x;
+  eye_y = cameras[camId].pose.y;
+  eye_z = cameras[camId].pose.z;
+  theta_loc = cameras[camId].pose.d +90;
+
+  clearCameras();
+  cameras[camId].is_selected=true;
+}
+
+
 /*
  *  GLUT calls this routine when an arrow key is pressed
  */
@@ -699,17 +822,20 @@ void special(int key,int x,int y)
   if (key == GLUT_KEY_RIGHT)
   {
     theta_loc -= 5;
+    clearCameras();
    }
   //  Left arrow key - decrease angle by 5 degrees
   else if (key == GLUT_KEY_LEFT)
   {
     theta_loc += 5;
+    clearCameras();
    }
   //  Up arrow key - increase elevation by 5 degrees
   else if (key == GLUT_KEY_UP)
   {
       eye_x += .1*Cos(theta_loc);
       eye_y += .1*Sin(theta_loc);
+      clearCameras();
 
    }
   //  Down arrow key - decrease elevation by 5 degrees
@@ -718,14 +844,16 @@ void special(int key,int x,int y)
 
       eye_x -= .1*Cos(theta_loc);
       eye_y -= .1*Sin(theta_loc);
-
+      clearCameras();
    }
   //  PageUp key - increase dim
   else if (key == GLUT_KEY_PAGE_UP)
-     eye_z += 0.1;
+  {   eye_z += 0.1;
+     clearCameras();}
   //  PageDown key - decrease dim
   else if (key == GLUT_KEY_PAGE_DOWN)
-     eye_z -= 0.1;
+  {   eye_z -= 0.1;
+     clearCameras();}
   //  Keep angles to +/-360 degrees
   //  Update projection
   Project(fov,asp,dim);
@@ -736,27 +864,23 @@ void special(int key,int x,int y)
 /*
  *  GLUT calls this routine when a key is pressed
  */
-void setCameraView(int camId)
-{
-  eye_x = cameras[camId].pose.x;
-  eye_y = cameras[camId].pose.y;
-  eye_z = cameras[camId].pose.z;
-  theta_loc = cameras[camId].pose.d +90;
-}
-
 void key(unsigned char ch,int x,int y)
 {
    //  Exit on ESC
-   if (ch == 27)
-      exit(0);
-
+    if (ch == 27) exit(0);
+    else if (ch=='v') view++;
     else if (ch=='1') setCameraView(0);
     else if (ch=='2') setCameraView(1);
     else if (ch=='3') setCameraView(2);
     else if (ch=='4') setCameraView(3);
     else if (ch=='5') setCameraView(4);
-    else if (ch==' ')
-      if (iteration<6) next_step();
+    else if (ch=='6') setCameraView(5);
+    else if (ch=='7') setCameraView(6);
+    else if (ch=='8') setCameraView(7);
+    else if (ch=='9') setCameraView(8);
+    else if (ch=='0') setCameraView(9);
+    else if (ch==' '){
+      if (iteration<11) next_step();}
 
    //  Translate shininess power to value (-1 => 0)
    shiny = shininess<0 ? 0 : pow(2.0,shininess);
@@ -796,7 +920,7 @@ struct Point * readInPointCloud(const char* pcFile, int scale)
  */
 int main(int argc,char* argv[])
 {
-    for (int i=0;i<5;i++)
+    for (int i=0;i<10;i++)
     {
       cameras[i].pose.x = demo_poses_array[i][0];
       cameras[i].pose.y = demo_poses_array[i][1];
@@ -817,12 +941,13 @@ int main(int argc,char* argv[])
       cameras[i].draw_landmarks=false;
       cameras[i].show_old=false;
       cameras[i].show_new=false;
+      cameras[i].is_selected=false;
 
     }
 
     camera_transforms[0]=true;
 
-    for (int i=0;i<5;i++)
+    for (int i=0;i<num_landmarks;i++)
     {
       landmarks[i].x = init_landmarks_array[i][0];
       landmarks[i].y = init_landmarks_array[i][1];
@@ -833,7 +958,7 @@ int main(int argc,char* argv[])
    //  Request double buffered, true color window with Z buffering at 600x600
    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
    glutInitWindowSize(1000,1000);
-   glutCreateWindow("Jensen Dempsey: Assignment 3");
+   glutCreateWindow("Jensen Dempsey: Project SLAM Demo");
    //  Set callbacks
    glutDisplayFunc(display);
    glutReshapeFunc(reshape);
