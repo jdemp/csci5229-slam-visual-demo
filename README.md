@@ -5,22 +5,29 @@ then run ./slam_demo
 
 Use arrow keys to navigate around, PageUp & PageDown allow you to move up/down
 Press the spacebar to advance through the steps
-Pressing 
 
-Fix the miscellaneous errors
--crashes if you try to iterate beyond the number of programmed iterations
--some transparency issues, cant see some things in the scene through the
-transparent part of the camera
+Pressing 0-9 will take you to the point of view of one of the cameras (with 1
+  being the first camera and 0 being the last)
+This will also let you see which landmarks were first detected by that camera,
+they will be green.
 
+The steps demonstrated in this demo are
+1. inserting a new camera
+2. detecting features in the camera's frame
+3. Showing those features connected to the the camera's center (of the two most recent cameras)
+4. Showing the correspondences between the two most recent frames
+5. From the correspondences calculating the approximate transform between frames
+repeat
 
+With the 10th camera frame, after detecting features (which are the same as the
+  first frame despite the initial position being off), will sift to the same position
+  as the first frame. This demonstrates loop detection and closure, as the camera
+  saw the same landmarks in roughly the same spot as the first frame we can assume
+  that the camera should be in roughly the same area. In actual SLAM this results
+  in a bundle adjustment happening and changing the position of the landmarks and cameras.
+  For the purpose of this demo, I just move the cameras to some slightly different poses.
 
-Show the correspondence lines between camera frames, this involves calculating a
-plane/line intercept
-
-Adding more keypoints (either manually or automatically), automatic generation
-has been proving difficult. To have at least 8 valid ones per frame with 4 or 5
-shared between consecutive frames.
-
-Turn lighting back and adjust it
-
-add some more things to the scene on the table
+l : triggers the lighting on and Off
+v : allows you to switch between viewing the scene with landmarks, just the scene, or just the landmarks
+      the landmark only is what the system would be functionally storing and seeing in spare SLAM.
+      

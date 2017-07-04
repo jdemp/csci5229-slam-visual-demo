@@ -1,33 +1,11 @@
 /*
  *  Lighting
  *
- *  Demonstrates basic lighting using a sphere and a cube.
- *
- *  Key bindings:
- *  l          Toggles lighting
- *  a/A        Decrease/increase ambient light
- *  d/D        Decrease/increase diffuse light
- *  s/S        Decrease/increase specular light
- *  e/E        Decrease/increase emitted light
- *  n/N        Decrease/increase shininess
- *  F1         Toggle smooth/flat shading
- *  F2         Toggle local viewer mode
- *  F3         Toggle light distance (1/5)
- *  F8         Change ball increment
- *  F9         Invert bottom normal
- *  m          Toggles light movement
- *  []         Lower/rise light
- *  p          Toggles ortogonal/perspective projection
- *  +/-        Change field of view of perspective
- *  x          Toggle axes
- *  arrows     Change view angle
- *  PgDn/PgUp  Zoom in and out
- *  0          Reset view angle
- *  ESC        Exit
  */
 #include "CSCIx229.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 
 
 #define MATCH 0
@@ -178,10 +156,12 @@ struct Camera{
   bool show_new;
   bool show_old;
   bool is_selected;
+  bool show_camera_points;
 };
 
 
-unsigned int texture[2]; // Textures
+unsigned int texture[4]; // Textures
+unsigned int objects[4];
 struct Camera cameras[10];
 struct Landmark landmarks[100];
 /*
@@ -256,16 +236,15 @@ struct Landmark landmarks[100];
     glEnd();
     glPopMatrix();
 
-    /* doesn't work will just keep making landmarks until max
-    int i = 0;
-    while (potential_landmarks_index<100 && i<8) {
-      potential_landmarks[potential_landmarks_index].x = cube_corners[i][0]*m[0] + cube_corners[i][1]*m[4] + cube_corners[i][2]*m[8] + m[12];
-      potential_landmarks[potential_landmarks_index].y = cube_corners[i][0]*m[1] + cube_corners[i][1]*m[5] + cube_corners[i][2]*m[9] + m[13];
-      potential_landmarks[potential_landmarks_index].z = cube_corners[i][0]*m[2] + cube_corners[i][1]*m[6] + cube_corners[i][2]*m[10] + m[14];
-      i++;
-    }
-    */
+}
 
+void seat()
+{
+  cube(0,0,.4,.5,.5,.05,0);
+  cube(.45,.45,.2,.05,.05,.2,0);
+  cube(-.45,.45,.2,.05,.05,.2,0);
+  cube(.45,-.45,.2,.05,.05,.2,0);
+  cube(-.45,-.45,.2,.05,.05,.2,0);
 }
 
 void table()
@@ -273,7 +252,7 @@ void table()
   //will apply texture
   glColor3f(.5,.35,.05);
   glBindTexture(GL_TEXTURE_2D,texture[0]);
-  float brown[] = {.5,.35,.05,1};
+  float brown[] = {.2,.1,.05,1};
   float black[] = {0,0,0,1};
   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,0);
   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,brown);
@@ -302,23 +281,27 @@ void ground()
 
 void walls()
 {
-  glColor4f(.5,.5,.5,1);
+  glColor4f(1,1,1,1);
   glBegin(GL_QUADS);
+  glNormal3f(-1,-0,0);
   glVertex3f(5,5,-.1);
   glVertex3f(5,-5,-.1);
   glVertex3f(5,-5,5);
   glVertex3f(5,5,5);
 
+  glNormal3f(0,-1,0);
   glVertex3f(5,5,-.1);
   glVertex3f(-5,5,-.1);
   glVertex3f(-5,5,5);
   glVertex3f(5,5,5);
 
+  glNormal3f(1,0,0);
   glVertex3f(-5,5,-.1);
   glVertex3f(-5,-5,-.1);
   glVertex3f(-5,-5,5);
   glVertex3f(-5,5,5);
 
+  glNormal3f(0,1,0);
   glVertex3f(5,-5,-.1);
   glVertex3f(-5,-5,-.1);
   glVertex3f(-5,-5,5);
@@ -367,7 +350,7 @@ static void hanoi_stand(double space_between_poles)
 
   glColor3f(.1,.1,.1);
   glBindTexture(GL_TEXTURE_2D,texture[0]);
-  float brown[] = {.5,.35,.05,1};
+  float brown[] = {.1,.1,.1,1};
   float black[] = {0,0,0,1};
   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,0);
   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,brown);
@@ -397,15 +380,6 @@ static void hanoi_stand(double space_between_poles)
  {
    const int d=5;
    int theta,phi;
-    //
-    //glBegin(GL_QUAD_STRIP);
-    /*
-    int bands = 360/d;0
-    double increment = 360/d;
-    double red = 1;
-    double green = 0;
-    double blue = 0;
-    */
     for (theta=0;theta<=360;theta+=d)
     {
       glBegin(GL_QUAD_STRIP);
@@ -533,11 +507,6 @@ void setCamLines(int newCamID, int oldCamID)
   }
 }
 
-//shows the correspondences between frames
-void showCorrespondences(int newCamID, int oldCamID)
-{
-
-}
 
 void next_step()
 {
@@ -576,18 +545,25 @@ void next_step()
   }
   else if (step==3 && iteration!=0) //show correspondences between the new cameras
   {
+    cameras[iteration].show_camera_points=true;
     step++;
   }
   else if (step==4 && iteration!=0) //draw a line showing transform
   {
 
     camera_transforms[iteration]=true;
+    cameras[iteration].show_camera_points=false;
+    cameras[iteration-1].show_old=false;
+    cameras[iteration].show_new=false;
     //increment
     step=0;
     iteration++;
   }
   else
   {
+    cameras[iteration].show_camera_points=false;
+    cameras[iteration].show_old=false;
+    cameras[iteration].show_new=false;
       step=0;
       iteration++;
   }
@@ -595,6 +571,13 @@ void next_step()
 
 void display()
 {
+
+    float Emission[]  = {0,0,0,1.0};
+    float Ambient[]   = {.5,.5,.5,1.0};
+    float Diffuse[]   = {.5,.5,.5,1.0};
+    float Specular[]  = {1,1,1,1.0};
+    float Shinyness[] = {1};
+    float Position[] = {0,0,5,1};
    //const double len=2.0;  //  Length of axes
    //  Erase the window and the depth buffer
    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -606,27 +589,39 @@ void display()
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    //  Undo previous transformations
    glLoadIdentity();
-   //  Perspective - set eye position
-  //double Ex = -2*dim*Sin(th)*Cos(ph);
-  //double Ey = +2*dim        *Sin(ph);
-  //double Ez = +2*dim*Cos(th)*Cos(ph);
-  //gluLookAt(Ex,Ey,Ez , 0,0,0 , 0,Cos(ph),0);
+   if(light){
+   glColor3f(1,1,1);
+   glPushMatrix();
+   glTranslated(0,0,5);
+   glutSolidSphere(0.03,10,10);
+   glPopMatrix();
+   glEnable(GL_NORMALIZE);
+   //  Enable lighting
+   glEnable(GL_LIGHTING);
+   //  Location of viewer for specular calculations
+   glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,local);
+   //  glColor sets ambient and diffuse color materials
+   glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+   glEnable(GL_COLOR_MATERIAL);
+   //  Enable light 0
+   glEnable(GL_LIGHT0);
+   //  Set ambient, diffuse, specular components and position of light 0
+   glLightfv(GL_LIGHT0,GL_AMBIENT ,Ambient);
+   glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
+   glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
+   glLightfv(GL_LIGHT0,GL_POSITION,Position);
+ }
 
-    gluLookAt(eye_x,eye_y, eye_z , eye_x + Cos(theta_loc),eye_y + Sin(theta_loc),eye_z , 0,0,1);
+   gluLookAt(eye_x,eye_y, eye_z , eye_x + Cos(theta_loc),eye_y + Sin(theta_loc),eye_z , 0,0,1);
 
    //  Flat or smooth shading
-   glShadeModel(smooth ? GL_SMOOTH : GL_FLAT);
+   glShadeModel(GL_SMOOTH);
 
    //  Light switch
    //rescale these to fit on the table
    //  Draw scene
    if(view%3!=2)
    {
-   float white[] = {1,1,1,1};
-   float black[] = {0,0,0,1};
-   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,white);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,black);
 
    glPushMatrix();
    glTranslated(-.5,-.4,.9);
@@ -671,13 +666,39 @@ void display()
    hanoi_stand(4);
 
    glPopMatrix();
+   table();
 
-     table();
+   glColor3f(.5,.3,.3);
+   glPushMatrix();
+    glTranslated(-.75,-1,0);
+    //glScaled()
+     seat();
+     glPopMatrix();
+
+     glPushMatrix();
+      glTranslated(.75,-1,0);
+      //glScaled()
+       seat();
+       glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(-.75,1,0);
+        //glScaled()
+    seat();
+    glPopMatrix();
+    glPushMatrix();
+    glTranslated(.75,1,0);
+          //glScaled()
+    seat();
+    glPopMatrix();
+
 
    }
    ground();
-   glDisable(GL_TEXTURE_2D);
+   glColor3f(.5,.5,.5);
    walls();
+   glDisable(GL_TEXTURE_2D);
+   glDisable(GL_LIGHTING);
    /*
    for (int i=1;i<num_landmarks;i++)
    {
@@ -745,7 +766,52 @@ void display()
          }
        }
      }
-   //draw lines designated to draw
+     //draw camera points and lines
+    if(step==4)
+    {
+        for(int lm0=0;lm0<10;lm0++){ //iterate through the old cam
+          for(int lm1=0;lm1<10;lm1++){ //iterate through the new cam
+            if(cameras[iteration].visible_landmarks[lm0] == cameras[iteration-1].visible_landmarks[lm1] && cameras[iteration].visible_landmarks[lm0]!=0)
+            {
+              double lmx = landmarks[lm0].x;
+              double lmy = landmarks[lm0].y;
+              double lmz = landmarks[lm0].z;
+              double c1x = cameras[iteration].pose.x;
+              double c1y = cameras[iteration].pose.y;
+              double c1z = cameras[iteration].pose.z;
+              double c2x = cameras[iteration-1].pose.x;
+              double c2y = cameras[iteration-1].pose.y;
+              double c2z = cameras[iteration-1].pose.z;
+
+              double d1 = pow(pow(lmx-c1x,2)+pow(lmy-c1y,2)+pow(lmz-c1z,2),0.5);
+              double d2 = pow(pow(lmx-c2x,2)+pow(lmy-c2y,2)+pow(lmz-c2z,2),0.5);
+
+
+              double lm_c1_x = c1x+(.5*((lmx-c1x)/d1));
+              double lm_c1_y = c1y+(.5*((lmy-c1y)/d1));
+              double lm_c1_z = c1z+(.5*((lmz-c1z)/d1));
+
+              double lm_c2_x = c2x+(.5*((lmx-c2x)/d2));
+              double lm_c2_y = c2y+(.5*((lmy-c2y)/d2));
+              double lm_c2_z = c2z+(.5*((lmz-c2z)/d2));
+
+              glColor4f(0,0,1,1);
+              glPointSize(10);
+              glBegin(GL_POINTS);
+              glVertex3d(lm_c1_x,lm_c1_y,lm_c1_z);
+              glVertex3d(lm_c2_x,lm_c2_y,lm_c2_z);
+              glEnd();
+
+              line(lm_c1_x,lm_c1_y,lm_c1_z,lm_c2_x,lm_c2_y,lm_c2_z,MATCH);
+
+
+              break;
+            }
+
+          }
+        }
+    }
+
    //draw transform lines
    for(int i=1;i<10;i++)
    {
@@ -773,8 +839,13 @@ void display()
    //  Display parameters
    glColor3f(1,1,1);
    glWindowPos2i(5,5);
-   Print("Angle=%d FOV=%d Step=%d Interation=%d",
+   Print("Angle=%d FOV=%d Step=%d Interation=%d\n",
      theta_loc,fov,step+1,iteration+1);
+  if (step==1) Print("Add a camera frame");
+  else if (step==2) Print("Detect Features in Camera frame");
+  else if (step==3) Print("Project Features into the Environment");
+  else if (step==4) Print("Find features tracked by consecutive frames");
+  else if (step==0 && iteration>1)Print("Estimate a transform based on tracked features");
 
    //  Render the scene and make it visible
    ErrCheck("display");
@@ -782,17 +853,6 @@ void display()
    glutSwapBuffers();
 }
 
-/*
- *  GLUT calls this routine when the window is resizedi
- */
-void idle()
-{
-   //  Elapsed time in seconds
-   double t = glutGet(GLUT_ELAPSED_TIME)/1000.0;
-   zh = fmod(90*t,360.0);
-   //  Tell GLUT it is necessary to redisplay the scenei
-   glutPostRedisplay();
-}
 
 void clearCameras()
 {
@@ -869,6 +929,7 @@ void key(unsigned char ch,int x,int y)
    //  Exit on ESC
     if (ch == 27) exit(0);
     else if (ch=='v') view++;
+    else if (ch=='l') light = 1-light;
     else if (ch=='1') setCameraView(0);
     else if (ch=='2') setCameraView(1);
     else if (ch=='3') setCameraView(2);
@@ -887,7 +948,7 @@ void key(unsigned char ch,int x,int y)
    //  Reproject
    Project(mode?fov:0,asp,dim);
    //  Animate if requested
-   glutIdleFunc(move?idle:NULL);
+   //glutIdleFunc(move?idle:NULL);
    //  Tell GLUT it is necessary to redisplay the scene
    glutPostRedisplay();
 }
@@ -905,19 +966,6 @@ void reshape(int width,int height)
    Project(mode?fov:0,asp,dim);
 }
 
-/*
-struct Point * readInPointCloud(const char* pcFile, int scale)
-{
-  FILE* f;
-  f = fopen(pcFile,"r");
-  if (!f) Fatal("Cannot open file %s\n",pcFile);
-
-
-}
-*/
-/*
- *  Start up GLUT and tell it what to do
- */
 int main(int argc,char* argv[])
 {
     for (int i=0;i<10;i++)
@@ -926,13 +974,14 @@ int main(int argc,char* argv[])
       cameras[i].pose.y = demo_poses_array[i][1];
       cameras[i].pose.z = demo_poses_array[i][2];
       cameras[i].pose.d = demo_poses_array[i][3];
-      //calc camera camera conrers
+      /*calc camera camera conrers
       for (int i=0;i<4;i++)
       {
         cameras[i].camera_corners[i].x = .5*camera_corners[i][0]*Cos(cameras[i].pose.d) - camera_corners[i][1]*Sin(cameras[i].pose.d) + cameras[i].pose.x;
         cameras[i].camera_corners[i].y = camera_corners[i][0]*Sin(cameras[i].pose.d) + .5*camera_corners[i][1]*Cos(cameras[i].pose.d) + cameras[i].pose.y;
         cameras[i].camera_corners[i].z = .5*camera_corners[i][2] + cameras[i].pose.z;
       }
+      */
       cameras[i].visible=false;
       for (int k=0;k<10;k++)
       {
@@ -942,6 +991,7 @@ int main(int argc,char* argv[])
       cameras[i].show_old=false;
       cameras[i].show_new=false;
       cameras[i].is_selected=false;
+      cameras[i].show_camera_points=false;
 
     }
 
@@ -955,7 +1005,7 @@ int main(int argc,char* argv[])
     }
    //  Initialize GLUT
    glutInit(&argc,argv);
-   //  Request double buffered, true color window with Z buffering at 600x600
+   //  Request double buffered, true color window with Z buffering at 1000x1000
    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
    glutInitWindowSize(1000,1000);
    glutCreateWindow("Jensen Dempsey: Project SLAM Demo");
@@ -964,11 +1014,11 @@ int main(int argc,char* argv[])
    glutReshapeFunc(reshape);
    glutSpecialFunc(special);
    glutKeyboardFunc(key);
-   glutIdleFunc(idle);
 
    texture[0] = LoadTexBMP("wood.bmp");
    texture[1] = LoadTexBMP("cleanmetal.bmp");
    //texture[2] = LoadTexBMP("metal.bmp");
+
 
    //objects[0] = LoadOBJ("tyra.obj");
    //  Pass control to GLUT so it can interact with the user
