@@ -804,9 +804,9 @@ void display()
           for(int lm1=0;lm1<10;lm1++){ //iterate through the new cam
             if(cameras[iteration].visible_landmarks[lm0] == cameras[iteration-1].visible_landmarks[lm1] && cameras[iteration].visible_landmarks[lm0]!=0)
             {
-              double lmx = landmarks[lm0].x;
-              double lmy = landmarks[lm0].y;
-              double lmz = landmarks[lm0].z;
+              double lmx = landmarks[cameras[iteration].visible_landmarks[lm0]].x;
+              double lmy = landmarks[cameras[iteration].visible_landmarks[lm0]].y;
+              double lmz = landmarks[cameras[iteration].visible_landmarks[lm0]].z;
               double c1x = cameras[iteration].pose.x;
               double c1y = cameras[iteration].pose.y;
               double c1z = cameras[iteration].pose.z;
@@ -818,13 +818,13 @@ void display()
               double d2 = pow(pow(lmx-c2x,2)+pow(lmy-c2y,2)+pow(lmz-c2z,2),0.5);
 
 
-              double lm_c1_x = c1x+(.5*((lmx-c1x)/d1));
-              double lm_c1_y = c1y+(.5*((lmy-c1y)/d1));
-              double lm_c1_z = c1z+(.5*((lmz-c1z)/d1));
+              double lm_c1_x = c1x+(.7*((lmx-c1x)/d1));
+              double lm_c1_y = c1y+(.7*((lmy-c1y)/d1));
+              double lm_c1_z = c1z+(.7*((lmz-c1z)/d1));
 
-              double lm_c2_x = c2x+(.5*((lmx-c2x)/d2));
-              double lm_c2_y = c2y+(.5*((lmy-c2y)/d2));
-              double lm_c2_z = c2z+(.5*((lmz-c2z)/d2));
+              double lm_c2_x = c2x+(.7*((lmx-c2x)/d2));
+              double lm_c2_y = c2y+(.7*((lmy-c2y)/d2));
+              double lm_c2_z = c2z+(.7*((lmz-c2z)/d2));
 
               glColor4f(0,0,1,1);
               glPointSize(10);
