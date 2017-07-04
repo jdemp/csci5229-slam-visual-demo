@@ -19,13 +19,13 @@ int mode=1;       //  Projection mode
 int move=1;       //  Move light
 int th=0;         //  Azimuth of view angle
 int ph=0;         //  Elevation of view angle       //  Field of view (for perspective)
-int light=0;      //  Lighting
+int light=1;      //  Lighting
 int theta_loc = 220;         //  angle for locomotion
 int fov=90;       //  Field of view (for perspective)
 double asp=1;     //  Aspect ratio
 double dim=5.0;   //  Size of world
-double eye_x = 5;
-double eye_y = 5;
+double eye_x = 4;
+double eye_y = 4;
 double eye_z = 1.5;
 int view = 1;
 // Light values
@@ -34,11 +34,6 @@ int distance  =   10;  // Light distance
 int inc       =  10;  // Ball increment
 int smooth    =   1;  // Smooth/Flat shading
 int local     =   0;  // Local Viewer Model
-int emission  =   0;  // Emission intensity (%)
-int ambient   =  30;  // Ambient intensity (%)
-int diffuse   = 100;  // Diffuse intensity (%)
-int specular  =   0;  // Specular intensity (%)
-int shininess =   0;  // Shininess (power of two)
 float shiny   =   1;  // Shininess (value)
 int zh        =  90;  // Light azimuth
 float zlight  =   0;  // Elevation of light
@@ -274,9 +269,14 @@ void ground()
   cube(0,0,-.1,5,5,.05,0);
 }
 
-void walls()
+void box()
 {
-  glColor4f(1,1,1,1);
+
+  glColor4f(.2,.2,.2,1);
+  float walls[] = {.2,.2,.2,1};
+  glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,0);
+  glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,walls);
+  glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,walls);
   glBegin(GL_QUADS);
   glNormal3f(-1,-0,0);
   glVertex3f(5,5,-.1);
@@ -299,6 +299,17 @@ void walls()
   glNormal3f(0,1,0);
   glVertex3f(5,-5,-.1);
   glVertex3f(-5,-5,-.1);
+  glVertex3f(-5,-5,5);
+  glVertex3f(5,-5,5);
+
+  glColor3f(.5,.5,.5);
+  float ceiling[] = {.5,.5,.5,1};
+  glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,0);
+  glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,ceiling);
+  glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,ceiling);
+  glNormal3f(0,0,-1);
+  glVertex3f(5,5,5);
+  glVertex3f(-5,5,5);
   glVertex3f(-5,-5,5);
   glVertex3f(5,-5,5);
   glEnd();
@@ -580,8 +591,8 @@ void next_step()
 
 void display()
 {
-
-    float Ambient[]   = {.5,.5,.5,1.0};
+    //float Emission[] = {.1,.1,.1,1};
+    float Ambient[]   = {.7,.7,.7,1.0};
     float Diffuse[]   = {.5,.5,.5,1.0};
     float Specular[]  = {1,1,1,1.0};
     float Position[] = {0,0,5,1};
@@ -616,6 +627,7 @@ void display()
    glLightfv(GL_LIGHT0,GL_AMBIENT ,Ambient);
    glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
    glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
+   //glLightfv(GL_LIGHT0,GL_EMISSION,Emission);
    glLightfv(GL_LIGHT0,GL_POSITION,Position);
  }
 
@@ -712,7 +724,7 @@ void display()
     glPushMatrix();
     glColor3f(.5,.5,.5);
     glBindTexture(GL_TEXTURE_2D,texture[2]);
-    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,100);
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,128);
     glTranslated(1.5,.5,1.05);
     glRotated(90,1,0,0);
     glRotated(15,0,1,0);
@@ -723,7 +735,7 @@ void display()
     glPushMatrix();
     glColor3f(.5,.5,.5);
     glBindTexture(GL_TEXTURE_2D,texture[2]);
-    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,100);
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,128);
     glTranslated(-1.4,-.4,1.05);
     glRotated(90,1,0,0);
     glRotated(280,0,1,0);
@@ -734,7 +746,7 @@ void display()
    }
    ground();
    glColor3f(.5,.5,.5);
-   walls();
+   box();
    glDisable(GL_TEXTURE_2D);
    glDisable(GL_LIGHTING);
    /*
@@ -984,9 +996,6 @@ void key(unsigned char ch,int x,int y)
     else if (ch==' '){
       if (iteration<11) next_step();}
 
-   //  Translate shininess power to value (-1 => 0)
-   shiny = shininess<0 ? 0 : pow(2.0,shininess);
-   //  Reproject
    Project(mode?fov:0,asp,dim);
    //  Animate if requested
    //glutIdleFunc(move?idle:NULL);
