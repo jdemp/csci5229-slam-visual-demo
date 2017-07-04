@@ -665,6 +665,16 @@ void display()
    torus(.5,1);
    hanoi_stand(4);
 
+   glPushMatrix();
+   //  Offset
+   glTranslated(0,4,1.6);
+   //glRotated(90,0,0,1);
+   glScaled(1.25,1.25,0.25);
+   glColor4f(0,1,0,1);
+   glBindTexture(GL_TEXTURE_2D,texture[1]);
+   torus(.5,1);
+   hanoi_stand(4);
+
    glPopMatrix();
    table();
 
@@ -692,6 +702,27 @@ void display()
     seat();
     glPopMatrix();
 
+    glPushMatrix();
+    glColor3f(.5,.5,.5);
+    glBindTexture(GL_TEXTURE_2D,texture[2]);
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,100);
+    glTranslated(1.5,.5,1.05);
+    glRotated(90,1,0,0);
+    glRotated(15,0,1,0);
+    glScaled(.15,.15,.15);
+    glCallList(objects[0]);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(.5,.5,.5);
+    glBindTexture(GL_TEXTURE_2D,texture[2]);
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,100);
+    glTranslated(-1.4,-.4,1.05);
+    glRotated(90,1,0,0);
+    glRotated(280,0,1,0);
+    glScaled(.15,.15,.15);
+    glCallList(objects[0]);
+    glPopMatrix();
 
    }
    ground();
@@ -1017,10 +1048,11 @@ int main(int argc,char* argv[])
 
    texture[0] = LoadTexBMP("wood.bmp");
    texture[1] = LoadTexBMP("cleanmetal.bmp");
+   texture[2] = LoadTexBMP("metal.bmp");
    //texture[2] = LoadTexBMP("metal.bmp");
 
 
-   //objects[0] = LoadOBJ("tyra.obj");
+   objects[0] = LoadOBJ("armadillo.obj");
    //  Pass control to GLUT so it can interact with the user
    ErrCheck("init");
    glutMainLoop();
