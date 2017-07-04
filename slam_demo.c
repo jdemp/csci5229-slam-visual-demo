@@ -140,11 +140,6 @@ struct Point{
   double z;
 };
 
-struct Intersection{
-  struct Point point;
-  bool intersection; //if an actual intersection
-};
-
 struct Camera{
   struct Pose pose;
   //the indexes of landmarks this camera can see (up to 10)
@@ -475,14 +470,6 @@ void camera(struct Pose pose)
   glPopMatrix();
 }
 
-
-
-struct Intersection calcIntersection(int camId, int landmarkId)
-{
-  struct Intersection inter;
-  return inter;
-}
-
 //finds landmarks visible to camera and adds 10 to its list
 void calcLandmarks()
 {
@@ -527,8 +514,30 @@ void next_step()
       }
       */
     }
+    iteration++;
+
+
   }
-  if (step==0) //add a camera
+
+  else if (iteration==9)
+  {
+    cameras[9].visible=true;
+    cameras[9].draw_landmarks=true;
+    cameras[9].show_new=true;
+    cameras[0].show_old=true;
+    iteration++;
+  }
+
+  else if (iteration>4)
+  {
+    step=0;
+    cameras[iteration].visible=true;
+    camera_transforms[iteration]=true;
+    iteration++;
+
+  }
+
+  else if (step==0) //add a camera
   {
     cameras[iteration].visible=true;
     step++;
@@ -572,11 +581,9 @@ void next_step()
 void display()
 {
 
-    float Emission[]  = {0,0,0,1.0};
     float Ambient[]   = {.5,.5,.5,1.0};
     float Diffuse[]   = {.5,.5,.5,1.0};
     float Specular[]  = {1,1,1,1.0};
-    float Shinyness[] = {1};
     float Position[] = {0,0,5,1};
    //const double len=2.0;  //  Length of axes
    //  Erase the window and the depth buffer
@@ -872,11 +879,14 @@ void display()
    glWindowPos2i(5,5);
    Print("Angle=%d FOV=%d Step=%d Interation=%d\n",
      theta_loc,fov,step+1,iteration+1);
-  if (step==1) Print("Add a camera frame");
-  else if (step==2) Print("Detect Features in Camera frame");
-  else if (step==3) Print("Project Features into the Environment");
-  else if (step==4) Print("Find features tracked by consecutive frames");
-  else if (step==0 && iteration>1)Print("Estimate a transform based on tracked features");
+  if (iteration==11) Print(" This causes all frames poses to be adjusted though Bundle Adjustment");
+  else if (iteration==10) Print (" Frame 10 Detects the Same features that frame 1 did");
+  else if (iteration>4) Print(" Demonstrating Loop Closure");
+  else if (step==1) Print(" Add a camera frame");
+  else if (step==2) Print(" Detect Features in Camera frame");
+  else if (step==3) Print(" Project Features into the Environment");
+  else if (step==4) Print(" Find features tracked by consecutive frames");
+  else if (step==0 && iteration>1)Print(" Estimate a transform based on tracked features");
 
    //  Render the scene and make it visible
    ErrCheck("display");
